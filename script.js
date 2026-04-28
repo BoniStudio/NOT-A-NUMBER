@@ -185,8 +185,8 @@
     <!-- tired eyes (not smiling) -->
     <path d="M90 58 L96 59"/>
     <path d="M104 59 L110 58"/>
-    <!-- stronger downturned mouth -->
-    <path d="M93 73 L100 79 L107 73"/>
+    <!-- triangle mouth pointing up -->
+    <path d="M93 76 L100 71 L107 76"/>
     <path d="M100 76 L100 86"/>
     <!-- raised shoulders, narrower body -->
     <path d="M88 92 Q100 84 112 92 L108 178 Q100 182 92 178 Z"/>
