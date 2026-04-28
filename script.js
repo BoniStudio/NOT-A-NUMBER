@@ -157,13 +157,13 @@
   const FIG_N1 = SVG_HEADER + g(`
     <path d="M80 46 Q100 20 120 46 Q124 68 118 80 L82 80 Q76 68 80 46 Z" fill="currentColor" opacity="0.06" stroke="none"/>
     <circle cx="100" cy="55" r="21"/>
-    <!-- worried inner brows -->
-    <path d="M88 50 L94 52" opacity="0.85"/>
-    <path d="M112 50 L106 52" opacity="0.85"/>
+    <!-- anxious brows pulled inward -->
+    <path d="M88 52 L94 50" opacity="0.85"/>
+    <path d="M112 52 L106 50" opacity="0.85"/>
     <circle cx="93" cy="56" r="1.4" fill="currentColor" stroke="none"/>
     <circle cx="107" cy="56" r="1.4" fill="currentColor" stroke="none"/>
-    <!-- slight frown (no smile) -->
-    <path d="M95 71 Q100 73 105 71"/>
+    <!-- clear downturned mouth -->
+    <path d="M94 71 L100 74 L106 71"/>
     <path d="M100 76 L100 86"/>
     <!-- narrower torso -->
     <path d="M86 92 Q100 87 114 92 L110 180 Q100 184 90 180 Z"/>
@@ -179,13 +179,14 @@
   const FIG_N2 = SVG_HEADER + g(`
     <path d="M80 46 Q100 22 120 46 Q122 66 116 78 L84 78 Q78 66 80 46 Z" fill="currentColor" opacity="0.05" stroke="none"/>
     <circle cx="100" cy="56" r="20"/>
-    <!-- pressed-down brows (sad / pained) -->
-    <path d="M85 49 L94 54"/>
-    <path d="M115 49 L106 54"/>
-    <circle cx="93" cy="58" r="1.3" fill="currentColor" stroke="none"/>
-    <circle cx="107" cy="58" r="1.3" fill="currentColor" stroke="none"/>
-    <!-- pronounced frown -->
-    <path d="M93 73 Q100 78 107 73"/>
+    <!-- brows tighten toward center -->
+    <path d="M85 53 L94 50"/>
+    <path d="M115 53 L106 50"/>
+    <!-- tired eyes (not smiling) -->
+    <path d="M90 58 L96 59"/>
+    <path d="M104 59 L110 58"/>
+    <!-- stronger downturned mouth -->
+    <path d="M93 73 L100 79 L107 73"/>
     <path d="M100 76 L100 86"/>
     <!-- raised shoulders, narrower body -->
     <path d="M88 92 Q100 84 112 92 L108 178 Q100 182 92 178 Z"/>
@@ -210,8 +211,8 @@
     <!-- single tear -->
     <path d="M93 62 L93 70" stroke-width="1.4" opacity="0.55"/>
     <circle cx="93" cy="71.5" r="1.2" fill="currentColor" stroke="none" opacity="0.55"/>
-    <!-- small frown -->
-    <path d="M96 74 Q100 77 104 74"/>
+    <!-- flat-sad mouth -->
+    <path d="M96 75 L100 77 L104 75"/>
     <path d="M100 78 L100 88"/>
     <!-- narrower torso -->
     <path d="M90 92 Q100 86 110 92 L106 178 Q100 180 94 178 Z"/>
@@ -232,16 +233,16 @@
     <!-- hard, pressed-down brows -->
     <path d="M85 51 L94 55"/>
     <path d="M115 51 L106 55"/>
-    <!-- sad downturned eyes -->
-    <path d="M89 60 Q93 63 97 60"/>
-    <path d="M103 60 Q107 63 111 60"/>
+    <!-- strained eyes -->
+    <path d="M89 61 L96 59"/>
+    <path d="M104 59 L111 61"/>
     <!-- streaks of tears down both cheeks -->
     <path d="M91 64 L91 72" stroke-width="1.3" opacity="0.6"/>
     <circle cx="91" cy="73.5" r="1.1" fill="currentColor" stroke="none" opacity="0.6"/>
     <path d="M109 64 L109 70" stroke-width="1.2" opacity="0.5"/>
     <circle cx="109" cy="71.5" r="1" fill="currentColor" stroke="none" opacity="0.5"/>
-    <!-- open crying mouth -->
-    <path d="M94 76 Q100 80 106 76"/>
+    <!-- trembling sad mouth -->
+    <path d="M94 77 L98 79 L102 78 L106 77"/>
     <path d="M100 79 L100 88"/>
     <!-- very narrow body -->
     <path d="M92 92 Q100 86 108 92 L104 176 Q100 178 96 176 Z"/>
