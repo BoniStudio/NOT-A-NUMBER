@@ -7,6 +7,10 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="color-scheme" content="light" />
+    <!-- Hint browsers to revalidate the HTML so updated ?v= numbers
+         actually reach visitors. GitHub Pages already serves the HTML
+         with a short max-age, this is just a belt-and-braces. -->
+    <meta http-equiv="Cache-Control" content="no-cache" />
     <title>Not a Number — Two ways of living in one body</title>
     <meta
       name="description"
@@ -26,7 +30,7 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=3" />
   </head>
 
   <body data-stage="landing" data-mode="numbers">
@@ -198,6 +202,6 @@
     <!-- Decorative cursor companion (desktop only) -->
     <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
 
-    <script src="script.js" defer></script>
+    <script src="script.js?v=3" defer></script>
   </body>
 </html>
