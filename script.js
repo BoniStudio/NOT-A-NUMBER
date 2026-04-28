@@ -19,20 +19,26 @@
    *  DATA
    * ------------------------------------------------------------------ */
 
-  /** Bubble sets for each mode. `variant` tweaks styling. */
+  /** Bubble sets for each mode. Numbers food bubbles have a two-layer
+   *  shape: `label` is the food name, `meta` is the kcal / nutrient tag
+   *  shown beneath. Body-anxiety bubbles only carry `label`. */
   const BUBBLES = {
     numbers: [
-      { id: "cake", label: "cake", numbered: "420 kcal" },
-      { id: "rice", label: "rice", numbered: "carbs" },
-      { id: "pasta", label: "pasta", numbered: "too much" },
-      { id: "milk-tea", label: "milk tea", numbered: "regret" },
-      { id: "bread", label: "bread", numbered: "avoid" },
-      { id: "weight", label: "44 kg" },
-      { id: "smaller", label: "smaller" },
-      { id: "not-enough", label: "not enough" },
-      { id: "skip", label: "skip dinner" },
-      { id: "compare", label: "compare harder" },
-      { id: "burn", label: "burn more" },
+      // food bubbles — every food carries a kcal / nutrient tag
+      { id: "cake", label: "cake", meta: "420 kcal", type: "food" },
+      { id: "rice", label: "rice", meta: "carbs · 206 kcal", type: "food" },
+      { id: "pasta", label: "pasta", meta: "too much · 350 kcal", type: "food" },
+      { id: "milk-tea", label: "milk tea", meta: "regret · 500 kcal", type: "food" },
+      { id: "bread", label: "bread", meta: "avoid · 160 kcal", type: "food" },
+      { id: "fruit", label: "fruit", meta: "sugar · 90 kcal", type: "food" },
+      { id: "salad", label: "salad", meta: "fat in dressing · 220 kcal", type: "food" },
+      // body / control bubbles
+      { id: "weight", label: "44 kg", type: "body" },
+      { id: "smaller", label: "smaller", type: "body" },
+      { id: "not-enough", label: "not enough", type: "body" },
+      { id: "skip", label: "skip dinner", type: "body" },
+      { id: "compare", label: "compare harder", type: "body" },
+      { id: "burn", label: "burn more", type: "body" },
     ],
     peace: [
       { id: "hungry", label: "hungry" },
@@ -46,19 +52,33 @@
     ],
   };
 
-  /** Noise words that fly in as pressure mounts (Numbers mode). */
-  const NOISE_WORDS = [
-    "not enough",
-    "again",
-    "lower",
-    "why did you eat",
-    "try harder",
-    "smaller",
-    "less",
-    "count it",
-    "burn",
-    "skip it",
-    "one more",
+  /** Noise words by intensity tier. The deeper into Numbers Mode the
+   *  visitor goes, the more numerical / kcal-heavy the inner monologue
+   *  becomes. Each tier inherits the feeling of the one below. */
+  const NUMBERS_NOISE_TIERS = [
+    [], // tier 0 — silent
+    // tier 1 (≥1 click): the first whispers
+    ["not enough", "again", "lower", "count it", "skip"],
+    // tier 2 (≥3 clicks): more pressure, body words
+    [
+      "not enough", "again", "lower", "count it", "smaller",
+      "skip", "burn", "control", "why did you eat", "too much",
+    ],
+    // tier 3 (≥5 clicks): numbers begin to take over
+    [
+      "420", "206", "500", "350", "160", "90",
+      "44 kg", "39 kg?", "carbs", "sugar", "fat",
+      "burn", "again", "lower", "why did you eat", "too much",
+      "skip", "control", "smaller", "0 kcal",
+    ],
+    // tier 4 (≥7 clicks): everything is kcal
+    [
+      "420 kcal", "500 kcal", "160 kcal", "350 kcal", "206 kcal",
+      "90 kcal", "0 kcal", "−400 kcal", "deficit",
+      "burn more", "not enough", "lower lower", "count everything",
+      "don't eat that", "compare harder", "44 kg", "39 kg?",
+      "smaller", "carbs", "sugar", "fat",
+    ],
   ];
 
   /** Gentle words that bloom in Peace mode. */
@@ -78,7 +98,7 @@
     numbers: [
       "", // stage 0 — leave quiet
       "I'll just skip the next one.",
-      "Something feels off in the mirror.",
+      "Why did I eat that.",
       "Smaller. Smaller. Smaller.",
       "I can't hear myself anymore.",
       "", // climax handled by ending overlay
@@ -95,6 +115,16 @@
   /** Click thresholds mapping clicks → stage index. */
   function numbersStageFromClicks(c) {
     if (c >= 10) return 5;
+    if (c >= 7) return 4;
+    if (c >= 5) return 3;
+    if (c >= 3) return 2;
+    if (c >= 1) return 1;
+    return 0;
+  }
+
+  /** Map click count to noise tier (drives word pool + density). */
+  function getNumbersTier() {
+    const c = STATE.clicks.numbers;
     if (c >= 7) return 4;
     if (c >= 5) return 3;
     if (c >= 3) return 2;
@@ -151,14 +181,17 @@
     <path d="M106 272 L118 272"/>
   `) + SVG_FOOTER;
 
-  /** N1: slightly thinner, arms crossing, faint unease. */
+  /** N1: slightly thinner, arms crossing, hesitant unease. */
   const FIG_N1 = SVG_HEADER + g(`
     <path d="M80 46 Q100 20 120 46 Q124 68 118 80 L82 80 Q76 68 80 46 Z" fill="currentColor" opacity="0.06" stroke="none"/>
     <circle cx="100" cy="55" r="21"/>
-    <circle cx="92" cy="55" r="1.4" fill="currentColor" stroke="none"/>
-    <circle cx="108" cy="55" r="1.4" fill="currentColor" stroke="none"/>
-    <!-- slightly downturned mouth -->
-    <path d="M95 70 Q100 67 105 70"/>
+    <!-- worried inner brows -->
+    <path d="M88 50 L94 52" opacity="0.85"/>
+    <path d="M112 50 L106 52" opacity="0.85"/>
+    <circle cx="93" cy="56" r="1.4" fill="currentColor" stroke="none"/>
+    <circle cx="107" cy="56" r="1.4" fill="currentColor" stroke="none"/>
+    <!-- slight frown (no smile) -->
+    <path d="M95 71 Q100 73 105 71"/>
     <path d="M100 76 L100 86"/>
     <!-- narrower torso -->
     <path d="M86 92 Q100 87 114 92 L110 180 Q100 184 90 180 Z"/>
@@ -171,17 +204,17 @@
     <path d="M105 272 L117 272"/>
   `) + SVG_FOOTER;
 
-  /** N2: shoulders raised, hugging self, pale. */
+  /** N2: shoulders raised, hugging self, pale. Brows lowered, mouth down. */
   const FIG_N2 = SVG_HEADER + g(`
     <path d="M80 46 Q100 22 120 46 Q122 66 116 78 L84 78 Q78 66 80 46 Z" fill="currentColor" opacity="0.05" stroke="none"/>
     <circle cx="100" cy="56" r="20"/>
-    <!-- eyebrows: slight slants -->
-    <path d="M86 50 L93 52"/>
-    <path d="M114 50 L107 52"/>
-    <circle cx="93" cy="57" r="1.3" fill="currentColor" stroke="none"/>
-    <circle cx="107" cy="57" r="1.3" fill="currentColor" stroke="none"/>
-    <!-- frown -->
-    <path d="M94 72 Q100 76 106 72"/>
+    <!-- pressed-down brows (sad / pained) -->
+    <path d="M85 49 L94 54"/>
+    <path d="M115 49 L106 54"/>
+    <circle cx="93" cy="58" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="107" cy="58" r="1.3" fill="currentColor" stroke="none"/>
+    <!-- pronounced frown -->
+    <path d="M93 73 Q100 78 107 73"/>
     <path d="M100 76 L100 86"/>
     <!-- raised shoulders, narrower body -->
     <path d="M88 92 Q100 84 112 92 L108 178 Q100 182 92 178 Z"/>
@@ -194,15 +227,21 @@
     <path d="M103 270 L115 270"/>
   `) + SVG_FOOTER;
 
-  /** N3: very thin, hollow eyes, head slightly bowed. */
+  /** N3: very thin, hollow eyes, first tear, head slightly bowed. */
   const FIG_N3 = SVG_HEADER + g(`
     <path d="M82 48 Q100 26 118 48 Q120 66 114 78 L86 78 Q80 66 82 48 Z" fill="currentColor" opacity="0.04" stroke="none"/>
     <circle cx="100" cy="58" r="19"/>
-    <!-- tired eyes: horizontal lines -->
+    <!-- worried brows -->
+    <path d="M86 50 L94 53" opacity="0.8"/>
+    <path d="M114 50 L106 53" opacity="0.8"/>
+    <!-- hollow tired eyes -->
     <path d="M89 58 L96 58"/>
     <path d="M104 58 L111 58"/>
-    <!-- mouth small and flat -->
-    <path d="M97 73 L103 73"/>
+    <!-- single tear -->
+    <path d="M93 62 L93 70" stroke-width="1.4" opacity="0.55"/>
+    <circle cx="93" cy="71.5" r="1.2" fill="currentColor" stroke="none" opacity="0.55"/>
+    <!-- small frown -->
+    <path d="M96 74 Q100 77 104 74"/>
     <path d="M100 78 L100 88"/>
     <!-- narrower torso -->
     <path d="M90 92 Q100 86 110 92 L106 178 Q100 180 94 178 Z"/>
@@ -216,16 +255,24 @@
     <path d="M103 270 L114 270"/>
   `) + SVG_FOOTER;
 
-  /** N4: tiny, clutching torso, head low. */
+  /** N4: tiny, crying. Sad-arc eyes, multiple tears, open frown. */
   const FIG_N4 = SVG_HEADER + `
   <g transform="rotate(-4 100 150)">` + g(`
     <path d="M83 50 Q100 28 117 50 Q119 68 113 78 L87 78 Q81 68 83 50 Z" fill="currentColor" opacity="0.04" stroke="none"/>
     <circle cx="100" cy="60" r="18"/>
-    <!-- closed eyes -->
-    <path d="M90 60 L96 60"/>
-    <path d="M104 60 L110 60"/>
-    <!-- thin flat mouth -->
-    <path d="M96 74 L104 74"/>
+    <!-- hard, pressed-down brows -->
+    <path d="M85 51 L94 55"/>
+    <path d="M115 51 L106 55"/>
+    <!-- sad downturned eyes -->
+    <path d="M89 60 Q93 63 97 60"/>
+    <path d="M103 60 Q107 63 111 60"/>
+    <!-- streaks of tears down both cheeks -->
+    <path d="M91 64 L91 72" stroke-width="1.3" opacity="0.6"/>
+    <circle cx="91" cy="73.5" r="1.1" fill="currentColor" stroke="none" opacity="0.6"/>
+    <path d="M109 64 L109 70" stroke-width="1.2" opacity="0.5"/>
+    <circle cx="109" cy="71.5" r="1" fill="currentColor" stroke="none" opacity="0.5"/>
+    <!-- open crying mouth -->
+    <path d="M94 76 Q100 80 106 76"/>
     <path d="M100 79 L100 88"/>
     <!-- very narrow body -->
     <path d="M92 92 Q100 86 108 92 L104 176 Q100 178 96 176 Z"/>
@@ -254,6 +301,12 @@
     <circle cx="104" cy="140" r="19"/>
     <!-- hair falling forward -->
     <path d="M88 135 Q95 150 112 155" opacity="0.6"/>
+    <!-- tear drops falling past the knees -->
+    <circle cx="120" cy="158" r="1.3" fill="currentColor" stroke="none" opacity="0.55"/>
+    <circle cx="124" cy="170" r="1.1" fill="currentColor" stroke="none" opacity="0.45"/>
+    <circle cx="128" cy="183" r="0.9" fill="currentColor" stroke="none" opacity="0.35"/>
+    <circle cx="78" cy="214" r="1.1" fill="currentColor" stroke="none" opacity="0.4"/>
+    <circle cx="82" cy="226" r="0.9" fill="currentColor" stroke="none" opacity="0.32"/>
     <!-- feet -->
     <path d="M68 252 Q78 270 130 268 L140 268"/>
   `) + SVG_FOOTER;
@@ -439,6 +492,8 @@
     // Paint the scene AFTER the transition has room to breathe.
     // We render immediately so swap lands during the fade.
     renderAll();
+    // Continuous inner monologue (Numbers mode only — gated inside).
+    startAmbientNoise();
   }
 
   /**
@@ -625,41 +680,42 @@
    *  BUBBLES
    * ------------------------------------------------------------------ */
 
-  /** Flip currently-visible food bubbles into their numbered form. */
+  /** Push every visible food bubble into its numberized form (kcal
+   *  takes over, food name fades / strikes through). */
   function numberizeExistingBubbles() {
-    const nodes = el.bubbles.querySelectorAll(".bubble:not(.is-popped)");
-    nodes.forEach((n) => {
-      const id = n.getAttribute("data-bubble-id");
-      const data = BUBBLES.numbers.find((b) => b.id === id);
-      if (data && data.numbered) {
-        // fade-swap the label for a moment of visual disruption
-        n.style.opacity = "0";
-        setTimeout(() => {
-          n.textContent = data.numbered;
-          n.classList.add("is-number");
-          n.style.opacity = "";
-        }, 220);
-      }
-    });
+    const nodes = el.bubbles.querySelectorAll(".bubble.food-bubble:not(.is-popped)");
+    nodes.forEach((n) => n.classList.add("is-numberized"));
   }
 
-  /** Build a single bubble <button>. */
+  /** Build a single bubble <button>. Food bubbles in Numbers mode get a
+   *  two-layer body: a small food name on top and the kcal / nutrient
+   *  label below. */
   function buildBubbleNode(b, mode) {
     const node = document.createElement("button");
     node.type = "button";
     node.className = "bubble";
     node.setAttribute("data-bubble-id", b.id);
-    node.setAttribute("aria-label", `bubble: ${b.label}`);
 
-    // Numbers mode: once clicks ≥ 7, food bubbles render in their
-    // numbered form — cake becomes "420 kcal", rice becomes "carbs", etc.
-    const numberize = mode === "numbers" && STATE.clicks.numbers >= 7;
-    let label = b.label;
-    if (numberize && b.numbered) {
-      label = b.numbered;
-      node.classList.add("is-number");
+    const isFood = mode === "numbers" && b.type === "food" && b.meta;
+
+    if (isFood) {
+      node.classList.add("food-bubble");
+      node.setAttribute("aria-label", `${b.label}, ${b.meta}`);
+      const labelEl = document.createElement("span");
+      labelEl.className = "bubble__label";
+      labelEl.textContent = b.label;
+      const metaEl = document.createElement("span");
+      metaEl.className = "bubble__meta";
+      metaEl.textContent = b.meta;
+      node.appendChild(labelEl);
+      node.appendChild(metaEl);
+      // After click 7, food bubbles flip: kcal dominates, food name fades.
+      if (STATE.clicks.numbers >= 7) node.classList.add("is-numberized");
+    } else {
+      node.setAttribute("aria-label", `bubble: ${b.label}`);
+      node.textContent = b.label;
     }
-    node.textContent = label;
+
     node.addEventListener("click", () => tapBubble(node));
     return node;
   }
@@ -730,46 +786,107 @@
    *  NOISE & BREATH
    * ------------------------------------------------------------------ */
 
+  /** Cap on simultaneous noise words — protects performance and keeps
+   *  the figure visible no matter how often the user clicks. */
+  const NOISE_WORD_CAP = 38;
+
   /**
-   * Spawn a word from the current mode's word pool. Numbers words streak
-   * horizontally across the screen (thought noise); Peace words rise
-   * gently from near the figure.
+   * On-click burst. Numbers mode pulls from the active tier and spawns a
+   * small flurry; Peace mode releases a single quiet breath word.
    */
   function spawnNoiseWord(originEl) {
-    const mode = STATE.mode;
-    const clicks = STATE.clicks[mode];
-    const pool = mode === "numbers" ? NOISE_WORDS : BREATH_WORDS;
-    // Numbers: spawn more as clicks climb.
-    const bursts = mode === "numbers" ? Math.min(1 + Math.floor(clicks / 2), 4) : 1;
-
-    for (let k = 0; k < bursts; k++) {
-      const word = pool[Math.floor(Math.random() * pool.length)];
-      const node = document.createElement("span");
-      node.className = "noise__word";
-      node.textContent = word;
-
-      if (mode === "numbers") {
-        const top = 15 + Math.random() * 75; // %
-        const left = 10 + Math.random() * 75; // %
-        const fontSize = 11 + Math.random() * 8;
-        const dur = 1.8 + Math.random() * 1.4;
-        node.style.top = top + "%";
-        node.style.left = left + "%";
-        node.style.fontSize = fontSize + "px";
-        node.style.animationDuration = dur + "s";
-      } else {
-        // peace: rise from around the figure center
-        const left = 35 + Math.random() * 30;
-        const top = 40 + Math.random() * 30;
-        node.style.left = left + "%";
-        node.style.top = top + "%";
-        node.style.fontSize = 14 + Math.random() * 8 + "px";
-      }
-
-      el.noise.appendChild(node);
-      // cleanup
-      setTimeout(() => node.remove(), 6000);
+    if (STATE.mode === "numbers") {
+      const tier = getNumbersTier();
+      if (tier === 0) return;
+      const burst = Math.min(2 + tier, 6);
+      for (let k = 0; k < burst; k++) spawnNumbersNoise();
+    } else {
+      spawnPeaceWord();
     }
+  }
+
+  /**
+   * Drop a single Numbers-mode word into the noise layer. Size, opacity,
+   * position and animation speed are all jittered, with numeric tokens
+   * occasionally rendered larger and bolder to feel like a calorie
+   * thought punching through.
+   */
+  function spawnNumbersNoise() {
+    if (el.noise.children.length >= NOISE_WORD_CAP) return;
+    const tier = getNumbersTier();
+    if (tier === 0) return;
+    const pool = NUMBERS_NOISE_TIERS[tier];
+    const word = pool[Math.floor(Math.random() * pool.length)];
+
+    const node = document.createElement("span");
+    node.className = "noise__word";
+    if (/\d/.test(word)) node.classList.add("noise__word--digit");
+    node.textContent = word;
+
+    // Mostly small, sometimes medium, rarely a large punch.
+    let fontSize;
+    const r = Math.random();
+    if (r < 0.65) fontSize = 10 + Math.random() * 4;
+    else if (r < 0.92) fontSize = 14 + Math.random() * 5;
+    else fontSize = 22 + Math.random() * 10;
+    if (/\d/.test(word) && Math.random() < 0.45) fontSize *= 1.35;
+
+    // Avoid sitting directly on top of the central figure column.
+    let left;
+    let attempts = 0;
+    do {
+      left = 4 + Math.random() * 88;
+      attempts++;
+    } while (attempts < 4 && left > 40 && left < 60);
+
+    const top = 6 + Math.random() * 86;
+    const opacity = 0.35 + Math.random() * 0.55;
+    const dur = 1.6 + Math.random() * 2.2;
+
+    node.style.top = top + "%";
+    node.style.left = left + "%";
+    node.style.fontSize = fontSize.toFixed(1) + "px";
+    node.style.animationDuration = dur + "s";
+    node.style.setProperty("--noise-peak", opacity.toFixed(2));
+
+    el.noise.appendChild(node);
+    setTimeout(() => node.remove(), 5500);
+  }
+
+  /** Peace mode: a single, slow breath word near the figure. */
+  function spawnPeaceWord() {
+    if (el.noise.children.length >= 8) return;
+    const word = BREATH_WORDS[Math.floor(Math.random() * BREATH_WORDS.length)];
+    const node = document.createElement("span");
+    node.className = "noise__word";
+    node.textContent = word;
+    const left = 35 + Math.random() * 30;
+    const top = 40 + Math.random() * 30;
+    node.style.left = left + "%";
+    node.style.top = top + "%";
+    node.style.fontSize = 14 + Math.random() * 8 + "px";
+    el.noise.appendChild(node);
+    setTimeout(() => node.remove(), 6000);
+  }
+
+  /* Continuous ambient noise (Numbers mode only). Even between clicks,
+   * the inner monologue keeps whispering — denser the deeper we are. */
+  let ambientTimer = null;
+  const AMBIENT_PER_TIER = [0, 1, 1, 2, 3];
+
+  function ambientTick() {
+    if (STATE.stage !== "scene") return;
+    if (STATE.mode !== "numbers") return;
+    const tier = getNumbersTier();
+    if (tier === 0) return;
+    const base = AMBIENT_PER_TIER[tier];
+    const extra = Math.random() < 0.4 ? 1 : 0;
+    for (let i = 0; i < base + extra; i++) spawnNumbersNoise();
+  }
+
+  function startAmbientNoise() {
+    if (ambientTimer) return;
+    ambientTimer = setInterval(ambientTick, 850);
   }
 
   /* ------------------------------------------------------------------

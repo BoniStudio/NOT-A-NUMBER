@@ -571,6 +571,38 @@ body[data-mode="numbers"][data-intensity="3"] .figure__body svg,
 body[data-mode="numbers"][data-intensity="4"] .figure__body svg {
   animation: tremor 1.6s ease-in-out infinite;
 }
+
+/* Cooler / harder background as Numbers Mode escalates. The bg gets a
+ * touch grayer, the line color firms up, and grain comes up. We keep
+ * the move tiny so the page never reads as "dramatic warning UI" — it
+ * should feel like the air slowly thinning out. */
+body[data-mode="numbers"][data-intensity="2"] {
+  --bg: #eeece6;
+  --bg-deep: #d9d6cd;
+  --line: #15151728;
+}
+body[data-mode="numbers"][data-intensity="3"] {
+  --bg: #e7e5dd;
+  --bg-deep: #cfccc1;
+  --line: #15151738;
+  --grain-opacity: 0.085;
+  --bubble-speed: 1.15;
+}
+body[data-mode="numbers"][data-intensity="4"] {
+  --bg: #dedbd2;
+  --bg-deep: #c4c1b6;
+  --line: #15151748;
+  --grain-opacity: 0.11;
+  --bubble-speed: 1.3;
+}
+/* Bubbles harden visually as intensity climbs (sharper corners, harder
+ * border ink, less softness in the fill). */
+body[data-mode="numbers"][data-intensity="3"] .bubble,
+body[data-mode="numbers"][data-intensity="4"] .bubble {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper) 95%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 65%, transparent);
+}
 @keyframes tremor {
   0%,
   100% {
@@ -658,11 +690,54 @@ body[data-mode="numbers"] .bubble {
   font-weight: 400;
   border-radius: 6px; /* sharper */
 }
-body[data-mode="numbers"] .bubble.is-number {
+
+/* Food bubbles in Numbers Mode are two-layer: a small food name on top
+ * and a kcal / nutrient tag below. The kcal line is the dominant element
+ * — bigger, mono, slightly tighter — to mirror how an ED-leaning mind
+ * already sees food as a number first. We deliberately stay cold and
+ * minimal; no red, no warning iconography. */
+body[data-mode="numbers"] .bubble.food-bubble {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 9px 18px 10px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.05;
+}
+body[data-mode="numbers"] .bubble.food-bubble .bubble__label {
+  font-family: var(--type-body);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  transition:
+    opacity 400ms var(--ease),
+    color 400ms var(--ease);
+}
+body[data-mode="numbers"] .bubble.food-bubble .bubble__meta {
   font-family: var(--type-data);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
   letter-spacing: 0.02em;
+  transition:
+    font-size 400ms var(--ease),
+    color 400ms var(--ease);
+}
+/* After the 7-click threshold: kcal takes over, food name fades and is
+ * struck through. The "world becomes only numbers." */
+body[data-mode="numbers"] .bubble.food-bubble.is-numberized .bubble__label {
+  opacity: 0.4;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+body[data-mode="numbers"] .bubble.food-bubble.is-numberized .bubble__meta {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
 }
 
 body[data-mode="peace"] .bubble {
@@ -704,10 +779,17 @@ body[data-mode="peace"] .bubble {
   will-change: transform, opacity;
 }
 body[data-mode="numbers"] .noise__word {
+  --noise-peak: 0.7;
   font-family: var(--type-data);
   color: var(--ink);
   letter-spacing: 0.02em;
   animation: streak 2.4s linear forwards;
+}
+/* numeric tokens — kcal, weights, deficits — punch through harder */
+body[data-mode="numbers"] .noise__word--digit {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink);
 }
 body[data-mode="peace"] .noise__word {
   font-family: var(--type-heading);
@@ -721,10 +803,10 @@ body[data-mode="peace"] .noise__word {
     transform: translateX(-20px);
   }
   15% {
-    opacity: 0.9;
+    opacity: var(--noise-peak, 0.85);
   }
-  85% {
-    opacity: 0.9;
+  80% {
+    opacity: var(--noise-peak, 0.85);
   }
   100% {
     opacity: 0;
