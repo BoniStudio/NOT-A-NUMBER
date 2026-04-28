@@ -7,9 +7,6 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="color-scheme" content="light" />
-    <!-- Hint browsers to revalidate the HTML so updated ?v= numbers
-         actually reach visitors. GitHub Pages already serves the HTML
-         with a short max-age, this is just a belt-and-braces. -->
     <meta http-equiv="Cache-Control" content="no-cache" />
     <title>Not a Number — Two ways of living in one body</title>
     <meta
@@ -34,14 +31,12 @@
   </head>
 
   <body data-stage="landing" data-mode="numbers">
-    <!-- Ambient field: a soft layered background that shifts with mode -->
     <div class="ambient" aria-hidden="true">
       <span class="ambient__grain"></span>
       <span class="ambient__veil ambient__veil--a"></span>
       <span class="ambient__veil ambient__veil--b"></span>
     </div>
 
-    <!-- ==================== LANDING ==================== -->
     <section
       id="landing"
       class="landing"
@@ -83,9 +78,7 @@
       </div>
     </section>
 
-    <!-- ==================== MAIN SCENE ==================== -->
     <main id="scene" class="scene" aria-hidden="true">
-      <!-- Top bar -->
       <header class="topbar">
         <div class="topbar__brand" aria-hidden="true">
           <span class="topbar__mark">◯</span>
@@ -131,34 +124,28 @@
         </button>
       </header>
 
-      <!-- Stage -->
       <section class="stage" aria-label="Interactive scene">
-        <!-- floating thought-noise layer (Numbers) / breath words (Peace) -->
         <div
           id="noiseLayer"
           class="noise"
           aria-hidden="true"
         ></div>
 
-        <!-- bubbles around the figure -->
         <div
           id="bubbles"
           class="bubbles"
           aria-label="Tap the bubbles"
         ></div>
 
-        <!-- the figure -->
         <figure class="figure" aria-label="A person in the middle of the scene">
           <div class="figure__glow" aria-hidden="true"></div>
           <div id="figure" class="figure__body" data-stage-index="0">
-            <!-- SVG injected by script.js -->
           </div>
           <figcaption class="figure__caption" id="figureCaption">
             <span class="figure__thought" id="figureThought"></span>
           </figcaption>
         </figure>
 
-        <!-- climax / ending overlay -->
         <div
           id="ending"
           class="ending"
@@ -183,7 +170,6 @@
         </div>
       </section>
 
-      <!-- bottom meta -->
       <footer class="bottombar">
         <div class="meter" aria-live="polite">
           <span class="meter__label" id="meterLabel">Numbers</span>
@@ -199,7 +185,6 @@
       </footer>
     </main>
 
-    <!-- Decorative cursor companion (desktop only) -->
     <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
 
     <script src="./script.js?v=3" defer></script>

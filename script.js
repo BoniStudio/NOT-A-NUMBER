@@ -1,27 +1,9 @@
-/* =========================================================
- * Not a Number — script.js
- * An interactive narrative about the body, food, and the mind.
- *
- * Architecture at a glance:
- *   - STATE:   a small plain object. Each mode owns its own click counter
- *              so both inner worlds can grow independently (a person can
- *              keep their Peace progress even after peeking at Numbers).
- *   - RENDER:  pure-ish functions read STATE and paint the DOM. The figure,
- *              the bubbles, the meter and the ambient all derive from state.
- *   - INTENT:  user intents (Enter, toggleMode, tapBubble, reset) mutate
- *              state, then call render().
- * ========================================================= */
+/* Main interaction logic for the page. */
 
 (() => {
   "use strict";
 
-  /* ------------------------------------------------------------------
-   *  DATA
-   * ------------------------------------------------------------------ */
-
-  /** Bubble sets for each mode. Numbers food bubbles have a two-layer
-   *  shape: `label` is the food name, `meta` is the kcal / nutrient tag
-   *  shown beneath. Body-anxiety bubbles only carry `label`. */
+  // Bubble text for both modes.
   const BUBBLES = {
     numbers: [
       // food bubbles — every food carries a kcal / nutrient tag
@@ -52,9 +34,7 @@
     ],
   };
 
-  /** Noise words by intensity tier. The deeper into Numbers Mode the
-   *  visitor goes, the more numerical / kcal-heavy the inner monologue
-   *  becomes. Each tier inherits the feeling of the one below. */
+  // Words used in Numbers mode at different click levels.
   const NUMBERS_NOISE_TIERS = [
     [], // tier 0 — silent
     // tier 1 (≥1 click): the first whispers
@@ -81,7 +61,7 @@
     ],
   ];
 
-  /** Gentle words that bloom in Peace mode. */
+  // Words used in Peace mode.
   const BREATH_WORDS = [
     "okay today",
     "enough",
@@ -93,7 +73,7 @@
     "rest",
   ];
 
-  /** Figure thought captions keyed by mode + stage index. */
+  // Caption text under the character.
   const THOUGHTS = {
     numbers: [
       "", // stage 0 — leave quiet
@@ -112,7 +92,7 @@
     ],
   };
 
-  /** Click thresholds mapping clicks → stage index. */
+  // Maps clicks to character stage.
   function numbersStageFromClicks(c) {
     if (c >= 10) return 5;
     if (c >= 7) return 4;
@@ -122,7 +102,7 @@
     return 0;
   }
 
-  /** Map click count to noise tier (drives word pool + density). */
+  // Maps clicks to noise level.
   function getNumbersTier() {
     const c = STATE.clicks.numbers;
     if (c >= 7) return 4;
@@ -142,20 +122,13 @@
   const NUMBERS_MAX = 10;
   const PEACE_MAX = 8;
 
-  /* ------------------------------------------------------------------
-   *  FIGURE — the body, drawn as SVG, progressing across 5–6 stages.
-   *  All figures share the viewBox 0 0 200 300. Ground line near y=275.
-   * ------------------------------------------------------------------ */
-
   const SVG_HEADER = `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" class="fig">`;
   const SVG_FOOTER = `</svg>`;
 
-  // tiny helper to keep authoring compact
+  // Small helper for SVG groups.
   const g = (inner, attrs = "") => `<g ${attrs} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
 
-  /* ----------- NUMBERS MODE FIGURES ----------- */
-
-  /** N0: calm, slightly tense standing figure. */
+  // Numbers mode character states.
   const FIG_N0 = SVG_HEADER + g(`
     <!-- hair silhouette -->
     <path d="M78 45 Q100 18 122 45 Q128 70 120 82 L80 82 Q72 70 78 45 Z" fill="currentColor" opacity="0.08" stroke="none"/>
@@ -181,7 +154,6 @@
     <path d="M106 272 L118 272"/>
   `) + SVG_FOOTER;
 
-  /** N1: slightly thinner, arms crossing, hesitant unease. */
   const FIG_N1 = SVG_HEADER + g(`
     <path d="M80 46 Q100 20 120 46 Q124 68 118 80 L82 80 Q76 68 80 46 Z" fill="currentColor" opacity="0.06" stroke="none"/>
     <circle cx="100" cy="55" r="21"/>
@@ -204,7 +176,6 @@
     <path d="M105 272 L117 272"/>
   `) + SVG_FOOTER;
 
-  /** N2: shoulders raised, hugging self, pale. Brows lowered, mouth down. */
   const FIG_N2 = SVG_HEADER + g(`
     <path d="M80 46 Q100 22 120 46 Q122 66 116 78 L84 78 Q78 66 80 46 Z" fill="currentColor" opacity="0.05" stroke="none"/>
     <circle cx="100" cy="56" r="20"/>
@@ -227,7 +198,6 @@
     <path d="M103 270 L115 270"/>
   `) + SVG_FOOTER;
 
-  /** N3: very thin, hollow eyes, first tear, head slightly bowed. */
   const FIG_N3 = SVG_HEADER + g(`
     <path d="M82 48 Q100 26 118 48 Q120 66 114 78 L86 78 Q80 66 82 48 Z" fill="currentColor" opacity="0.04" stroke="none"/>
     <circle cx="100" cy="58" r="19"/>
@@ -255,7 +225,6 @@
     <path d="M103 270 L114 270"/>
   `) + SVG_FOOTER;
 
-  /** N4: tiny, crying. Sad-arc eyes, multiple tears, open frown. */
   const FIG_N4 = SVG_HEADER + `
   <g transform="rotate(-4 100 150)">` + g(`
     <path d="M83 50 Q100 28 117 50 Q119 68 113 78 L87 78 Q81 68 83 50 Z" fill="currentColor" opacity="0.04" stroke="none"/>
@@ -285,7 +254,6 @@
     <path d="M102 270 L113 270"/>
   `) + `</g>` + SVG_FOOTER;
 
-  /** N5: sitting on the floor, knees pulled up, head down. CLIMAX. */
   const FIG_N5 = SVG_HEADER + g(`
     <!-- ground -->
     <path d="M40 272 L160 272" opacity="0.4"/>
@@ -311,9 +279,7 @@
     <path d="M68 252 Q78 270 130 268 L140 268"/>
   `) + SVG_FOOTER;
 
-  /* ----------- PEACE MODE FIGURES ----------- */
-
-  /** P0: calm standing, a soft body. */
+  // Peace mode character states.
   const FIG_P0 = SVG_HEADER + g(`
     <path d="M76 46 Q100 16 124 46 Q130 72 122 84 L78 84 Q70 72 76 46 Z" fill="currentColor" opacity="0.14" stroke="none"/>
     <circle cx="100" cy="55" r="23"/>
@@ -331,7 +297,6 @@
     <path d="M106 272 L120 272"/>
   `) + SVG_FOOTER;
 
-  /** P1: more open stance, small smile. */
   const FIG_P1 = SVG_HEADER + g(`
     <path d="M76 44 Q100 14 124 44 Q132 72 122 84 L78 84 Q68 72 76 44 Z" fill="currentColor" opacity="0.14" stroke="none"/>
     <circle cx="100" cy="55" r="23"/>
@@ -349,7 +314,6 @@
     <path d="M107 272 L122 272"/>
   `) + SVG_FOOTER;
 
-  /** P2: holding a warm bowl, eating. */
   const FIG_P2 = SVG_HEADER + g(`
     <path d="M76 44 Q100 14 124 44 Q132 72 122 84 L78 84 Q68 72 76 44 Z" fill="currentColor" opacity="0.14" stroke="none"/>
     <circle cx="100" cy="56" r="23"/>
@@ -375,7 +339,6 @@
     <path d="M106 272 L120 272"/>
   `) + SVG_FOOTER;
 
-  /** P3: resting, eyes closed, peaceful. */
   const FIG_P3 = SVG_HEADER + `<g transform="rotate(3 100 150)">` + g(`
     <path d="M76 44 Q100 14 124 44 Q132 72 122 84 L78 84 Q68 72 76 44 Z" fill="currentColor" opacity="0.14" stroke="none"/>
     <circle cx="100" cy="55" r="23"/>
@@ -393,7 +356,6 @@
     <path d="M104 272 L118 272"/>
   `) + `</g>` + SVG_FOOTER;
 
-  /** P4: sitting cross-legged, holding a warm cup — ending. */
   const FIG_P4 = SVG_HEADER + g(`
     <!-- sparkles -->
     <path d="M46 120 L50 116 L54 120 L50 124 Z" fill="currentColor" opacity="0.6" stroke="none"/>
@@ -438,23 +400,13 @@
     peace: [FIG_P0, FIG_P1, FIG_P2, FIG_P3, FIG_P4],
   };
 
-  /* ------------------------------------------------------------------
-   *  STATE
-   * ------------------------------------------------------------------ */
-
   const STATE = {
     stage: "landing", // "landing" | "scene"
     mode: "numbers", // "numbers" | "peace"
     clicks: { numbers: 0, peace: 0 },
-    reachedEnding: { numbers: false, peace: false },
-    // rolling pointer into the bubble pool per mode — used to recycle
-    // a new thought into any slot whose bubble was just consumed.
-    bubbleCursor: { numbers: 0, peace: 0 },
+    ended: { numbers: false, peace: false },
+    nextBubble: { numbers: 0, peace: 0 },
   };
-
-  /* ------------------------------------------------------------------
-   *  DOM LOOKUPS
-   * ------------------------------------------------------------------ */
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -479,37 +431,24 @@
     cursorDot: $("#cursorDot"),
   };
 
-  /* ------------------------------------------------------------------
-   *  INTENTS
-   * ------------------------------------------------------------------ */
-
   function enterScene() {
     if (STATE.stage === "scene") return;
     STATE.stage = "scene";
     el.body.dataset.stage = "scene";
     el.scene.setAttribute("aria-hidden", "false");
     el.landing.setAttribute("aria-hidden", "true");
-    // Paint the scene AFTER the transition has room to breathe.
-    // We render immediately so swap lands during the fade.
-    renderAll();
-    // Continuous inner monologue (Numbers mode only — gated inside).
+    updatePage();
+    // Starts low-level floating words in Numbers mode.
     startAmbientNoise();
   }
 
-  /**
-   * Mode switching:
-   * We deliberately DO NOT reset counters when switching modes. Each inner
-   * world keeps its own state. Users can flip back to see what they've been
-   * building in either direction. This is core to the thesis: the two lives
-   * coexist in one body.
-   */
+  // Sets the current mode.
   function setMode(mode) {
     if (mode === STATE.mode) return;
     STATE.mode = mode;
     el.body.dataset.mode = mode;
-    // if an ending overlay is showing, close it when switching
     hideEnding();
-    renderAll();
+    updatePage();
   }
 
   function tapBubble(bubbleEl) {
@@ -538,12 +477,10 @@
       if (!slot || !slot.parentElement) return;
       if (STATE.clicks[mode] < cap) {
         const pool = BUBBLES[mode];
-        const idx = STATE.bubbleCursor[mode] % pool.length;
-        STATE.bubbleCursor[mode] += 1;
+        const idx = STATE.nextBubble[mode] % pool.length;
+        STATE.nextBubble[mode] += 1;
         const next = pool[idx];
         const fresh = buildBubbleNode(next, mode);
-        // inherit the float deltas from the old bubble so the floating
-        // rhythm feels consistent within a slot
         fresh.style.setProperty(
           "--float-dx",
           bubbleEl.style.getPropertyValue("--float-dx") || "0px",
@@ -562,13 +499,12 @@
           setTimeout(() => fresh.classList.add("is-in"), 60);
         });
       } else {
-        // at cap — retire the slot
         slot.parentElement.removeChild(slot);
       }
     }, 480);
 
     renderToggle();
-    renderFigure();
+    updatePerson();
     renderThought();
     renderMeter();
     renderIntensity();
@@ -580,21 +516,16 @@
   function resetAll() {
     STATE.clicks.numbers = 0;
     STATE.clicks.peace = 0;
-    STATE.reachedEnding.numbers = false;
-    STATE.reachedEnding.peace = false;
+    STATE.ended.numbers = false;
+    STATE.ended.peace = false;
     hideEnding();
-    renderAll();
+    updatePage();
   }
-
-  /* ------------------------------------------------------------------
-   *  RENDER
-   * ------------------------------------------------------------------ */
-
-  function renderAll() {
+  function updatePage() {
     renderToggle();
-    renderFigure();
+    updatePerson();
     renderThought();
-    renderBubbles();
+    showBubbles();
     renderMeter();
     renderIntensity();
   }
@@ -607,7 +538,8 @@
     });
   }
 
-  function renderFigure() {
+  // Changes the character based on clicks.
+  function updatePerson() {
     const mode = STATE.mode;
     const clicks = STATE.clicks[mode];
     const stageIdx =
@@ -615,8 +547,6 @@
         ? numbersStageFromClicks(clicks)
         : peaceStageFromClicks(clicks);
     const svg = FIGURES[mode][stageIdx] || FIGURES[mode][0];
-    // Only swap markup if stage actually changed, to avoid re-creating SVG
-    // on every render (which would kill transitions).
     if (el.figure.dataset.stageIndex !== String(stageIdx) ||
         el.figure.dataset.stageMode !== mode) {
       el.figure.innerHTML = svg;
@@ -676,20 +606,13 @@
     el.body.dataset.intensity = String(intensity);
   }
 
-  /* ------------------------------------------------------------------
-   *  BUBBLES
-   * ------------------------------------------------------------------ */
-
-  /** Push every visible food bubble into its numberized form (kcal
-   *  takes over, food name fades / strikes through). */
+  // Turns food bubbles into number-heavy state.
   function numberizeExistingBubbles() {
     const nodes = el.bubbles.querySelectorAll(".bubble.food-bubble:not(.is-popped)");
     nodes.forEach((n) => n.classList.add("is-numberized"));
   }
 
-  /** Build a single bubble <button>. Food bubbles in Numbers mode get a
-   *  two-layer body: a small food name on top and the kcal / nutrient
-   *  label below. */
+  // Builds one bubble button.
   function buildBubbleNode(b, mode) {
     const node = document.createElement("button");
     node.type = "button";
@@ -709,7 +632,6 @@
       metaEl.textContent = b.meta;
       node.appendChild(labelEl);
       node.appendChild(metaEl);
-      // After click 7, food bubbles flip: kcal dominates, food name fades.
       if (STATE.clicks.numbers >= 7) node.classList.add("is-numberized");
     } else {
       node.setAttribute("aria-label", `bubble: ${b.label}`);
@@ -720,17 +642,8 @@
     return node;
   }
 
-  /**
-   * Render the initial bubble ring for the current mode. We position
-   * bubbles on an ellipse around the figure using deterministic angles,
-   * lightly jittered so the layout feels organic rather than mechanical.
-   *
-   * After this initial render, tapBubble recycles individual slots with
-   * fresh thoughts from the pool — we don't re-render the whole ring on
-   * every click, because that would interrupt floating animations and
-   * make the scene feel nervous in the wrong way.
-   */
-  function renderBubbles() {
+  // Shows bubble ring around the character.
+  function showBubbles() {
     el.bubbles.innerHTML = "";
     const mode = STATE.mode;
     const pool = BUBBLES[mode];
@@ -738,13 +651,9 @@
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const small = vw < 640;
-    // A ring of ~6 on small screens, ~8 on larger screens. Keeps the
-    // scene from feeling cluttered around the figure.
     const count = small ? 6 : Math.min(pool.length, 8);
 
-    // Start the recycle cursor past the initial slice so new bubbles
-    // introduce fresh words.
-    STATE.bubbleCursor[mode] = count;
+    STATE.nextBubble[mode] = count;
 
     for (let i = 0; i < count; i++) {
       const b = pool[i % pool.length];
@@ -754,7 +663,6 @@
 
       const node = buildBubbleNode(b, mode);
 
-      // position on an ellipse around the figure
       const angle = (i / count) * Math.PI * 2 + (mode === "peace" ? 0.3 : 0);
       const jr = 0.92 + ((i * 37) % 17) / 100;
       const rx = Math.min(vw * 0.38, 420) * jr;
@@ -782,36 +690,23 @@
     }
   }
 
-  /* ------------------------------------------------------------------
-   *  NOISE & BREATH
-   * ------------------------------------------------------------------ */
-
-  /** Cap on simultaneous noise words — protects performance and keeps
-   *  the figure visible no matter how often the user clicks. */
+  // Limit number of floating words.
   const NOISE_WORD_CAP = 38;
 
-  /**
-   * On-click burst. Numbers mode pulls from the active tier and spawns a
-   * small flurry; Peace mode releases a single quiet breath word.
-   */
+  // Adds new floating words after each click.
   function spawnNoiseWord(originEl) {
     if (STATE.mode === "numbers") {
       const tier = getNumbersTier();
       if (tier === 0) return;
       const burst = Math.min(2 + tier, 6);
-      for (let k = 0; k < burst; k++) spawnNumbersNoise();
+      for (let k = 0; k < burst; k++) addNoiseWords();
     } else {
       spawnPeaceWord();
     }
   }
 
-  /**
-   * Drop a single Numbers-mode word into the noise layer. Size, opacity,
-   * position and animation speed are all jittered, with numeric tokens
-   * occasionally rendered larger and bolder to feel like a calorie
-   * thought punching through.
-   */
-  function spawnNumbersNoise() {
+  // Adds one Numbers-mode floating word.
+  function addNoiseWords() {
     if (el.noise.children.length >= NOISE_WORD_CAP) return;
     const tier = getNumbersTier();
     if (tier === 0) return;
@@ -823,7 +718,6 @@
     if (/\d/.test(word)) node.classList.add("noise__word--digit");
     node.textContent = word;
 
-    // Mostly small, sometimes medium, rarely a large punch.
     let fontSize;
     const r = Math.random();
     if (r < 0.65) fontSize = 10 + Math.random() * 4;
@@ -831,7 +725,6 @@
     else fontSize = 22 + Math.random() * 10;
     if (/\d/.test(word) && Math.random() < 0.45) fontSize *= 1.35;
 
-    // Avoid sitting directly on top of the central figure column.
     let left;
     let attempts = 0;
     do {
@@ -853,7 +746,7 @@
     setTimeout(() => node.remove(), 5500);
   }
 
-  /** Peace mode: a single, slow breath word near the figure. */
+  // Adds one Peace-mode floating word.
   function spawnPeaceWord() {
     if (el.noise.children.length >= 8) return;
     const word = BREATH_WORDS[Math.floor(Math.random() * BREATH_WORDS.length)];
@@ -869,38 +762,33 @@
     setTimeout(() => node.remove(), 6000);
   }
 
-  /* Continuous ambient noise (Numbers mode only). Even between clicks,
-   * the inner monologue keeps whispering — denser the deeper we are. */
   let ambientTimer = null;
   const AMBIENT_PER_TIER = [0, 1, 1, 2, 3];
 
-  function ambientTick() {
+  // Small periodic motion in Numbers mode.
+  function addSmallMotion() {
     if (STATE.stage !== "scene") return;
     if (STATE.mode !== "numbers") return;
     const tier = getNumbersTier();
     if (tier === 0) return;
     const base = AMBIENT_PER_TIER[tier];
     const extra = Math.random() < 0.4 ? 1 : 0;
-    for (let i = 0; i < base + extra; i++) spawnNumbersNoise();
+    for (let i = 0; i < base + extra; i++) addNoiseWords();
   }
 
   function startAmbientNoise() {
     if (ambientTimer) return;
-    ambientTimer = setInterval(ambientTick, 850);
+    ambientTimer = setInterval(addSmallMotion, 850);
   }
-
-  /* ------------------------------------------------------------------
-   *  ENDING
-   * ------------------------------------------------------------------ */
 
   function checkEnding() {
     const mode = STATE.mode;
     const clicks = STATE.clicks[mode];
-    if (mode === "numbers" && clicks >= NUMBERS_MAX && !STATE.reachedEnding.numbers) {
-      STATE.reachedEnding.numbers = true;
+    if (mode === "numbers" && clicks >= NUMBERS_MAX && !STATE.ended.numbers) {
+      STATE.ended.numbers = true;
       setTimeout(() => showEnding("numbers"), 700);
-    } else if (mode === "peace" && clicks >= PEACE_MAX && !STATE.reachedEnding.peace) {
-      STATE.reachedEnding.peace = true;
+    } else if (mode === "peace" && clicks >= PEACE_MAX && !STATE.ended.peace) {
+      STATE.ended.peace = true;
       setTimeout(() => showEnding("peace"), 700);
     }
   }
@@ -926,13 +814,8 @@
     el.ending.setAttribute("aria-hidden", "true");
   }
 
-  /* ------------------------------------------------------------------
-   *  WIRING
-   * ------------------------------------------------------------------ */
-
   function bind() {
     el.enter.addEventListener("click", enterScene);
-    // let Enter key from keyboard focus do the same
     document.addEventListener("keydown", (e) => {
       if (STATE.stage === "landing" && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault();
@@ -950,28 +833,22 @@
     el.reset.addEventListener("click", resetAll);
     el.endingClose.addEventListener("click", hideEnding);
 
-    // Desktop cursor companion
     window.addEventListener("pointermove", (e) => {
       el.cursorDot.style.transform =
         `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
     });
 
-    // Re-layout bubbles on resize (debounced)
     let t;
     window.addEventListener("resize", () => {
       if (STATE.stage !== "scene") return;
       clearTimeout(t);
-      t = setTimeout(renderBubbles, 180);
+      t = setTimeout(showBubbles, 180);
     });
   }
 
-  /* ------------------------------------------------------------------
-   *  INIT
-   * ------------------------------------------------------------------ */
-
   function init() {
     bind();
-    // Preload figure at stage 0 so the scene has content the moment we enter
+    // Shows first character before user enters.
     el.figure.innerHTML = FIGURES.numbers[0];
     el.figure.dataset.stageIndex = "0";
     el.figure.dataset.stageMode = "numbers";
